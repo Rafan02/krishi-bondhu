@@ -51,9 +51,9 @@ function getPlot(r, c) {
   return plots.find((p) => p.r === r && p.c === c);
 }
 
-function logAction(text) {
+function logAction(text, type) {
   const label = 'D' + day + ' · ' + hourLabel(simHour);
-  actionLog.unshift({ time: label, text });
+  actionLog.unshift({ time: label, text, type: type || 'action' });
   if (actionLog.length > 40) actionLog.pop();
   renderActionLog();
 }
@@ -67,15 +67,15 @@ function logWarnings() {
   const weak = plots.filter((p) => p.plant < 50).length;
   const stage = currentStage(day);
 
-  if (dry > 0) logAction(`Warning · ${dry} plot(s) dry — water recommended`);
-  if (wet > 0) logAction(`Warning · ${wet} plot(s) too wet — ease irrigation`);
-  if (lowN > 3) logAction(`Warning · ${lowN} plot(s) low nitrogen — fertilize recommended`);
-  if (pest > 0) logAction(`Warning · ${pest} plot(s) pest risk — treat recommended`);
-  if (weak > 0) logAction(`Warning · ${weak} plot(s) weak plant health — check moisture & nutrients`);
-  if (stage.name === 'Flowering') logAction('Warning · Flowering stage — keep moisture steady');
-  if (stage.name === 'Mature') logAction('Warning · Mature stage — drain wet plots before harvest');
+  if (dry > 0) logAction(`${dry} plot(s) dry — water recommended`, 'warning');
+  if (wet > 0) logAction(`${wet} plot(s) too wet — ease irrigation`, 'warning');
+  if (lowN > 3) logAction(`${lowN} plot(s) low nitrogen — fertilize recommended`, 'warning');
+  if (pest > 0) logAction(`${pest} plot(s) pest risk — treat recommended`, 'warning');
+  if (weak > 0) logAction(`${weak} plot(s) weak plant health — check moisture & nutrients`, 'warning');
+  if (stage.name === 'Flowering') logAction('Flowering stage — keep moisture steady', 'warning');
+  if (stage.name === 'Mature') logAction('Mature stage — drain wet plots before harvest', 'warning');
   if (weather.rainChance >= RULES.highRainChance) {
-    logAction(`Warning · High rain chance (${weather.rainChance}%) — skip some watering`);
+    logAction(`High rain chance (${weather.rainChance}%) — skip some watering`, 'warning');
   }
 }
 
@@ -86,9 +86,16 @@ function renderActionLog() {
     box.innerHTML = '<p class="hint" style="margin:0">No actions yet. Water, fertilize, or run auto modes to fill this log.</p>';
     return;
   }
-  box.innerHTML = actionLog.map((e) =>
-    `<div class="log-item"><span class="log-time">${e.time}</span><span class="log-text">${e.text}</span></div>`
-  ).join('');
+  box.innerHTML = actionLog.map((e) => {
+    const isWarn = e.type === 'warning';
+    const icon = isWarn
+      ? '<i class="fa-solid fa-triangle-exclamation log-icon"></i>'
+      : '<i class="fa-solid fa-circle-check log-icon"></i>';
+    return `<div class="log-item ${isWarn ? 'log-warn' : 'log-action'}">
+      <div class="log-row">${icon}<span class="log-time">${e.time}</span></div>
+      <span class="log-text">${e.text}</span>
+    </div>`;
+  }).join('');
 }
 
 function toast(msg) {
