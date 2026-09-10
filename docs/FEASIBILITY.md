@@ -13,7 +13,7 @@ Smallholder rice farmers in **Chattogram** (demo field: **Hathazari**), ~1 acre,
 A **working software prototype** in the browser:
 
 - Sector map, sensor-style readings, advice, optional auto water/fertilizer  
-- Pest **detection only**  
+- Pest detection + treatment (manual / bulk)  
 - Action log and yield comparison  
 
 It does **not** claim a finished commercial product or a trained neural network in production.
@@ -35,7 +35,7 @@ No tractor robot required for the first version.
 
 - Water only dry zones (manual bulk or optional auto)  
 - Fertilizer advice by nutrient (urea / TSP–DAP / MOP), not whole-field broadcast  
-- Pest alerts without fake “spray everything” mechanics  
+- Pest treatment targets flagged plots only (no whole-field spray)  
 - Action log supports accountability and learning  
 
 ## Scalability
@@ -57,7 +57,7 @@ Real deployment can buffer readings on ESP32 when the tower/network is down.
 |------|------------|
 | Farmers distrust full auto fertilizer | Default = advise; auto is optional |
 | Sensor drift / cost | Start with moisture only |
-| Pest false alarms | Detection + human check, no auto spray in this design |
+| Pest false alarms | Detection + human check; treat is manual (no auto spray) |
 
 ## Success metric (pilot idea)
 
