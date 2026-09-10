@@ -272,13 +272,31 @@ footer {
   gap: 0.4rem;
 }
 .log-item {
-  background: #f7f3ea;
   border-radius: 8px;
   padding: 0.45rem 0.55rem;
   font-size: 0.78rem;
   display: flex;
   flex-direction: column;
   gap: 0.15rem;
+  border: 1px solid transparent;
 }
+.log-row {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+.log-icon { font-size: 0.72rem; }
+.log-action {
+  background: #f0f7f1;
+  border-color: #c5e0c9;
+}
+.log-action .log-icon { color: #15803d; }
+.log-action .log-text { color: #14532d; }
+.log-warn {
+  background: #fef2f2;
+  border-color: #fecaca;
+}
+.log-warn .log-icon { color: #b91c1c; }
+.log-warn .log-text { color: #991b1b; font-weight: 500; }
 .log-time { color: var(--muted); font-size: 0.68rem; font-weight: 600; }
 .log-text { color: var(--ink); }
