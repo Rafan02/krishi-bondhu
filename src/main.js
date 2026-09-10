@@ -20,11 +20,11 @@ import {
 import { createWeather, updateWeather } from './weather.js';
 
 const Chart = window.Chart;
-// ---------- state ----------
+
 let day = 22;
 let playing = false;
 let timer = null;
-let selected = null; // { r, c }
+let selected = null;
 let plots = createField();
 let weather = createWeather();
 let baseYield = estimateYield(plots, day, false, null);
@@ -35,8 +35,8 @@ let yieldHistory = {
 };
 let yieldChart = null;
 let autoIrrigate = false;
+let page = 'field';
 
-// ---------- helpers ----------
 function getPlot(r, c) {
   return plots.find((p) => p.r === r && p.c === c);
 }
@@ -51,151 +51,184 @@ function toast(msg) {
   setTimeout(() => t.remove(), 2400);
 }
 
-// ---------- shell ----------
+/** Rice stalks SVG — color follows plot condition */
+function riceSVG(p) {
+  const c = plotColor(p);
+  return `<svg viewBox="0 0 40 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <g stroke="${c}" stroke-width="1.6" fill="none" stroke-linecap="round">
+      <path d="M8 34 C8 22 6 14 8 6" />
+      <path d="M14 34 C13 24 12 16 15 8" />
+      <path d="M20 34 C20 22 19 14 20 5" />
+      <path d="M26 34 C27 24 28 15 25 7" />
+      <path d="M32 34 C32 22 34 14 32 6" />
+    </g>
+    <g fill="${c}" opacity="0.9">
+      <circle cx="8" cy="5" r="1.3"/>
+      <circle cx="15" cy="7" r="1.3"/>
+      <circle cx="20" cy="4" r="1.3"/>
+      <circle cx="25" cy="6" r="1.3"/>
+      <circle cx="32" cy="5" r="1.3"/>
+    </g>
+  </svg>`;
+}
+
 function shell() {
   return `
-  <header>
+  <header class="topbar">
     <div class="brand">
-      <div class="brand-icon">🌾</div>
+      <div class="brand-mark">KB</div>
       <div>
         <h1>Krishi Bondhu</h1>
-        <p>1-acre Aman rice · Paba, Rajshahi</p>
+        <p>Aman field intelligence</p>
       </div>
     </div>
-    <div class="badges">
-      <span class="badge" id="seasonBadge">Aman season</span>
-      <span class="badge" id="rainBadge">Rain chance —</span>
-      <span class="badge" id="dayLabel">Day 1</span>
-    </div>
+    <nav class="nav">
+      <button type="button" data-page="field" class="active">Field</button>
+      <button type="button" data-page="sensors">Sensors</button>
+      <button type="button" data-page="advise">Advise</button>
+      <button type="button" data-page="guide">How it works</button>
+    </nav>
   </header>
 
-  <div class="layout">
-    <section>
-      <div class="card">
-        <div class="row" style="justify-content:space-between;margin-bottom:0.75rem">
-          <h2 style="margin:0"><i class="fa-solid fa-cloud-sun"></i> Field conditions</h2>
-          <div class="row">
-            <button class="btn" id="btnPlay"><i class="fa-solid fa-play"></i> Start day</button>
-            <button class="btn btn-ghost" id="btnReset">Reset</button>
-            <label class="check-label">
-              <input type="checkbox" id="autoIrrigate" />
-              Auto water dry plots
-            </label>
-          </div>
-        </div>
-        <div class="stats four">
-          <div class="stat"><div class="label">Air temp</div><div class="value" id="airTemp">—</div></div>
-          <div class="stat"><div class="label">Air humidity</div><div class="value" id="airHum">—</div></div>
-          <div class="stat"><div class="label">Today rain</div><div class="value" id="rainMm">—</div></div>
-          <div class="stat"><div class="label">Growth stage</div><div class="value" id="growthStage" style="font-size:1rem">—</div></div>
-        </div>
-      </div>
+  <div id="page-field" class="page active">
+    <p class="page-kicker">Demo field · Paba, Rajshahi</p>
+    <h2 class="page-title">Live field grid</h2>
+    <p class="page-sub">1.0 acre · Aman paddy. Each square is a management zone a farmer can walk to. Color and rice texture show crop condition — not decoration.</p>
 
-      <div class="card">
-        <h2><i class="fa-solid fa-border-all"></i> Field map <span style="font-weight:400;color:var(--muted);font-size:0.75rem">(48 plots · click one)</span></h2>
-        <div class="col-labels">
-          ${[...COL_LABELS].map((l) => `<div>${l}</div>`).join('')}
+    <div class="summary">
+      <div class="item"><div class="lab">Moisture</div><div class="num" id="sumMoist">—</div></div>
+      <div class="item"><div class="lab">Pest load</div><div class="num" id="sumPest">—</div></div>
+      <div class="item"><div class="lab">Plant health</div><div class="num" id="sumPlant">—</div></div>
+    </div>
+
+    <div class="weather-strip">
+      <div>
+        <div class="day" id="dayLabel">Aman day 22</div>
+        <div class="meta" id="weatherMeta">Typical Rajshahi morning</div>
+      </div>
+      <div class="metrics">
+        <span id="airTemp">—</span>
+        <span id="airHum">—</span>
+        <span id="rainMm">—</span>
+        <span id="rainBadge">—</span>
+      </div>
+      <button type="button" class="btn btn-primary" id="btnPlay">Run clock</button>
+      <button type="button" class="btn" id="btnReset">Reset field</button>
+      <label class="check-label"><input type="checkbox" id="autoIrrigate" /> Auto water dry</label>
+    </div>
+
+    <div class="layout">
+      <section>
+        <div class="field-frame">
+          <div class="field-meta">
+            <span>North bund · road</span>
+            <span>1 acre · 48 plots</span>
+          </div>
+          <div class="col-labels">${[...COL_LABELS].map((l) => `<div>${l}</div>`).join('')}</div>
+          <div id="fieldGrid"></div>
         </div>
-        <div id="fieldGrid"></div>
         <div class="legend">
-          <span><span class="swatch" style="background:#15803d"></span> Good</span>
-          <span><span class="swatch" style="background:#ca8a04"></span> Dry / low</span>
-          <span><span class="swatch" style="background:#9f1239"></span> Pest</span>
+          <span><span class="swatch" style="background:#15803d"></span> Healthy</span>
+          <span><span class="swatch" style="background:#ca8a04"></span> Dry / weak</span>
+          <span><span class="swatch" style="background:#9f1239"></span> Pest risk</span>
           <span><span class="swatch" style="background:#0369a1"></span> Too wet</span>
         </div>
-        <p class="hint">North dries faster · South near canal stays wetter · Center can get pest risk</p>
-      </div>
+        <p class="hint">North dries faster · South near canal stays wetter · Center can show pest / blast risk</p>
 
-      <div class="card">
-        <h2><i class="fa-solid fa-bolt"></i> Fix all problem plots (one click)</h2>
-        <div class="bulk-row">
-          <button class="btn btn-sky" id="bulkWater"><i class="fa-solid fa-droplet"></i> Water all dry</button>
-          <button class="btn btn-amber" id="bulkFert"><i class="fa-solid fa-flask"></i> Fertilize all low</button>
-          <button class="btn btn-rose" id="bulkPest"><i class="fa-solid fa-bug"></i> Treat all pest</button>
+        <div class="card" style="margin-top:1rem">
+          <h2>Fix all problem plots</h2>
+          <div class="bulk-row">
+            <button type="button" class="btn btn-sky" id="bulkWater">Water all dry</button>
+            <button type="button" class="btn btn-amber" id="bulkFert">Fertilize all low</button>
+            <button type="button" class="btn btn-rose" id="bulkPest">Treat all pest</button>
+          </div>
+          <p class="hint">One click for every bad zone — no need to tap each square.</p>
         </div>
-        <p class="hint">No need to click every bad square. These buttons fix the whole field at once.</p>
-      </div>
+      </section>
 
-      <div class="card">
-        <h2><i class="fa-solid fa-chart-column"></i> Yield: with system vs without</h2>
-        <div class="chart-wrap"><canvas id="yieldChart"></canvas></div>
-        <div class="yield-boxes">
-          <div class="yield-box">
-            <div class="label">Without help (start)</div>
-            <div class="value" style="color:var(--amber)" id="yieldBase">—</div>
-          </div>
-          <div class="yield-box good">
-            <div class="label">With Krishi Bondhu</div>
-            <div class="value" style="color:var(--green)" id="yieldNow">—</div>
-          </div>
-        </div>
-      </div>
-    </section>
-
-    <aside>
-      <div class="card">
-        <h2><i class="fa-solid fa-seedling"></i> <span id="plotTitle">Select a plot</span></h2>
-        <div id="plotEmpty" class="hint" style="text-align:center;padding:1.5rem 0">Click any square on the field map</div>
-        <div id="plotDetail" style="display:none">
-          <div class="stats" style="margin-bottom:0.65rem">
-            <div class="stat"><div class="label">Soil type</div><div class="value" style="font-size:0.95rem" id="pSoilType">—</div></div>
-            <div class="stat"><div class="label">Soil quality</div><div class="value" style="font-size:0.95rem" id="pSoilQuality">—</div></div>
-            <div class="stat"><div class="label">Moisture</div><div class="value" style="font-size:0.95rem" id="pMoisture">—</div></div>
-            <div class="stat"><div class="label">Plant health</div><div class="value" style="font-size:0.95rem" id="pPlant">—</div></div>
-          </div>
-          <div class="label" style="font-size:0.7rem;color:var(--muted);margin-bottom:0.35rem">Nutrients (N · P · K)</div>
-          <div class="bars" id="npkBars"></div>
-          <div class="stats" style="margin:0.65rem 0">
-            <div class="stat"><div class="label">Pest risk</div><div class="value" style="font-size:0.95rem" id="pPest">—</div></div>
-            <div class="stat"><div class="label">Status</div><div class="value" style="font-size:0.95rem" id="pStatus">—</div></div>
-          </div>
-          <div class="row">
-            <button class="btn btn-sky" id="actWater"><i class="fa-solid fa-droplet"></i> Water</button>
-            <button class="btn btn-amber" id="actFert"><i class="fa-solid fa-flask"></i> Fertilizer</button>
-            <button class="btn btn-rose" id="actPest"><i class="fa-solid fa-bug"></i> Treat pest</button>
+      <aside>
+        <div class="card" id="inspectorCard">
+          <h2>Plot inspector</h2>
+          <div id="plotEmpty" class="hint" style="padding:1.25rem 0;text-align:center">Click any square on the grid</div>
+          <div id="plotDetail" style="display:none">
+            <div class="inspector-title" id="plotTitle">A1</div>
+            <div class="inspector-status" id="pStatus">—</div>
+            <div class="meter"><div class="top"><span class="lab">Soil moisture</span><span class="val" id="pMoisture">—</span></div><div class="track"><div class="fill fill-moist" id="barMoist" style="width:40%"></div></div></div>
+            <div class="meter"><div class="top"><span class="lab">Nitrogen (N)</span><span class="val" id="valN">—</span></div><div class="track"><div class="fill fill-n" id="barN" style="width:40%"></div></div></div>
+            <div class="meter"><div class="top"><span class="lab">Phosphorus (P)</span><span class="val" id="valP">—</span></div><div class="track"><div class="fill fill-p" id="barP" style="width:40%"></div></div></div>
+            <div class="meter"><div class="top"><span class="lab">Potassium (K)</span><span class="val" id="valK">—</span></div><div class="track"><div class="fill fill-k" id="barK" style="width:40%"></div></div></div>
+            <div class="meter"><div class="top"><span class="lab">Pest load</span><span class="val" id="pPest">—</span></div><div class="track"><div class="fill fill-pest" id="barPest" style="width:20%"></div></div></div>
+            <div class="meter"><div class="top"><span class="lab">Plant health</span><span class="val" id="pPlant">—</span></div><div class="track"><div class="fill fill-plant" id="barPlant" style="width:60%"></div></div></div>
+            <div class="hint" id="pSoilLine">Soil type · quality</div>
+            <div class="action-row">
+              <button type="button" class="btn btn-primary" id="actWater">Irrigate</button>
+              <button type="button" class="btn" id="actFert">Urea</button>
+              <button type="button" class="btn" id="actPest">Treat</button>
+            </div>
+            <button type="button" class="linkish" id="clearSel">Clear selection</button>
           </div>
         </div>
-      </div>
+      </aside>
+    </div>
+  </div>
 
-      <div class="card">
-        <h2><i class="fa-solid fa-route"></i> Growth path to harvest</h2>
-        <div id="growthPath"></div>
-        <p class="hint">Plan changes with weather and field data — not a fixed calendar.</p>
-      </div>
+  <div id="page-sensors" class="page">
+    <p class="page-kicker">Live averages</p>
+    <h2 class="page-title">Sensors</h2>
+    <p class="page-sub">Field-wide readings the system uses for advice and yield.</p>
+    <div class="stats-mini" style="margin-bottom:1rem">
+      <div class="stat-mini"><div class="lab">Avg moisture</div><div class="val" id="avgMoist">—</div></div>
+      <div class="stat-mini"><div class="lab">Avg plant health</div><div class="val" id="avgPlant">—</div></div>
+      <div class="stat-mini"><div class="lab">Plots need water</div><div class="val" id="needWater">—</div></div>
+      <div class="stat-mini"><div class="lab">Plots with pest</div><div class="val" id="needPest">—</div></div>
+    </div>
+    <div class="card">
+      <h2>Growth stage</h2>
+      <div id="growthPath"></div>
+      <p class="hint">Plan follows weather and field data — not a fixed calendar.</p>
+    </div>
+  </div>
 
+  <div id="page-advise" class="page">
+    <p class="page-kicker">Recommendations</p>
+    <h2 class="page-title">Advise</h2>
+    <p class="page-sub">What to do now, and expected yield with vs without the system.</p>
+    <div class="layout">
       <div class="card">
-        <h2><i class="fa-solid fa-lightbulb"></i> What to do now</h2>
+        <h2>What to do now</h2>
         <ul class="advice" id="adviceList"></ul>
       </div>
-
       <div class="card">
-        <h2><i class="fa-solid fa-gauge-high"></i> Field average</h2>
-        <div class="stats">
-          <div class="stat"><div class="label">Avg moisture</div><div class="value" id="avgMoist">—</div></div>
-          <div class="stat"><div class="label">Avg plant health</div><div class="value" id="avgPlant">—</div></div>
-          <div class="stat"><div class="label">Plots need water</div><div class="value" style="color:var(--amber)" id="needWater">—</div></div>
-          <div class="stat"><div class="label">Plots with pest</div><div class="value" style="color:var(--rose)" id="needPest">—</div></div>
+        <h2>Yield: with system vs without</h2>
+        <div class="chart-wrap"><canvas id="yieldChart"></canvas></div>
+        <div class="yield-boxes">
+          <div class="yield-box"><div class="label">Without help</div><div class="value" id="yieldBase">—</div></div>
+          <div class="yield-box good"><div class="label">With Krishi Bondhu</div><div class="value" id="yieldNow">—</div></div>
         </div>
       </div>
+    </div>
+  </div>
 
-      <div class="card">
-        <h2>How it works</h2>
-        <ol style="margin:0;padding-left:1.1rem;font-size:0.8rem;color:var(--muted);line-height:1.55">
-          <li><strong style="color:var(--muted-2)">Sensors</strong> read soil type, quality, moisture, N-P-K, plant health, air humidity, and season.</li>
-          <li><strong style="color:var(--muted-2)">System</strong> predicts yield and builds a water / fertilizer / pest plan from live data.</li>
-          <li><strong style="color:var(--muted-2)">Map</strong> shows each sector. Use one-click bulk actions. Graph compares yield with vs without the system.</li>
-        </ol>
-      </div>
-    </aside>
+  <div id="page-guide" class="page">
+    <p class="page-kicker">Track C · Agritech</p>
+    <h2 class="page-title">How it works</h2>
+    <div class="card">
+      <ol style="margin:0;padding-left:1.15rem;color:var(--muted);line-height:1.6;font-size:0.92rem">
+        <li><strong style="color:var(--ink)">Sensors</strong> read soil type, quality, moisture, N·P·K, plant health, air humidity, and season / rain chance.</li>
+        <li><strong style="color:var(--ink)">System</strong> predicts yield and builds a water / fertilizer / pest plan from live data — not a fixed timetable.</li>
+        <li><strong style="color:var(--ink)">Map</strong> shows each sector. Yellow / red need attention. One-click bulk actions fix all problem plots. Graph compares yield with vs without the system.</li>
+      </ol>
+    </div>
+    <p class="hint" style="margin-top:1rem">See docs/ARCHITECTURE.md, FEASIBILITY.md, and AI_USAGE.md in the GitHub repo.</p>
   </div>
 
   <footer>Krishi Bondhu · Robofest Buildathon Track C (Agritech) · Concept simulation</footer>
   `;
 }
 
-// ---------- render pieces ----------
 function renderField() {
   const grid = document.getElementById('fieldGrid');
+  if (!grid) return;
   grid.innerHTML = '';
   for (let r = 0; r < ROWS; r++) {
     for (let c = 0; c < COLS; c++) {
@@ -203,7 +236,7 @@ function renderField() {
       const div = document.createElement('div');
       div.className = 'plot' + (selected && selected.r === r && selected.c === c ? ' selected' : '');
       div.style.backgroundColor = plotColor(p);
-      div.innerHTML = `<span class="plot-label">${p.id}</span>`;
+      div.innerHTML = riceSVG(p) + `<span class="plot-tag">${p.id} · ${Math.round(p.moisture)}</span>`;
       div.title = `${p.id} · moisture ${Math.round(p.moisture)}% · plant ${Math.round(p.plant)}`;
       div.onclick = () => {
         selected = { r, c };
@@ -217,68 +250,80 @@ function renderField() {
 function renderInspector() {
   const empty = document.getElementById('plotEmpty');
   const detail = document.getElementById('plotDetail');
+  if (!empty || !detail) return;
   if (!selected) {
     empty.style.display = 'block';
     detail.style.display = 'none';
-    document.getElementById('plotTitle').textContent = 'Select a plot';
     return;
   }
   empty.style.display = 'none';
   detail.style.display = 'block';
   const p = getPlot(selected.r, selected.c);
-  document.getElementById('plotTitle').textContent = 'Plot ' + p.id;
-  document.getElementById('pSoilType').textContent = p.soilType;
-  document.getElementById('pSoilQuality').textContent = soilQuality(p) + ' / 100';
-  document.getElementById('pMoisture').textContent = Math.round(p.moisture) + '%';
-  document.getElementById('pPlant').textContent = Math.round(p.plant) + ' / 100';
-  document.getElementById('npkBars').innerHTML = `
-    <div class="bar-row"><span>N</span><div class="bar-track"><div class="bar-fill bar-n" style="width:${p.n}%"></div></div><span>${Math.round(p.n)}</span></div>
-    <div class="bar-row"><span>P</span><div class="bar-track"><div class="bar-fill bar-p" style="width:${p.p}%"></div></div><span>${Math.round(p.p)}</span></div>
-    <div class="bar-row"><span>K</span><div class="bar-track"><div class="bar-fill bar-k" style="width:${p.k}%"></div></div><span>${Math.round(p.k)}</span></div>
-  `;
-  document.getElementById('pPest').textContent = Math.round(p.pest) + '% risk';
+  document.getElementById('plotTitle').textContent = p.id;
   const st = statusLabel(p);
-  document.getElementById('pStatus').innerHTML = `<span class="${st.color}">${st.text}</span>`;
+  document.getElementById('pStatus').textContent = st.text;
+  document.getElementById('pMoisture').textContent = Math.round(p.moisture) + '%';
+  document.getElementById('barMoist').style.width = Math.min(100, p.moisture) + '%';
+  document.getElementById('valN').textContent = Math.round(p.n);
+  document.getElementById('valP').textContent = Math.round(p.p);
+  document.getElementById('valK').textContent = Math.round(p.k);
+  document.getElementById('barN').style.width = p.n + '%';
+  document.getElementById('barP').style.width = p.p + '%';
+  document.getElementById('barK').style.width = p.k + '%';
+  document.getElementById('pPest').textContent = Math.round(p.pest * 10) / 10;
+  document.getElementById('barPest').style.width = Math.min(100, p.pest) + '%';
+  document.getElementById('pPlant').textContent = Math.round(p.plant);
+  document.getElementById('barPlant').style.width = p.plant + '%';
+  document.getElementById('pSoilLine').textContent =
+    p.soilType + ' · soil quality ' + soilQuality(p) + '/100';
+}
+function renderWeather() {
+  document.getElementById('dayLabel').textContent = 'Aman day ' + day;
+  document.getElementById('weatherMeta').textContent =
+    currentStage(day).name + ' · typical Rajshahi conditions';
+  document.getElementById('airTemp').textContent = Math.round(weather.temp) + '°C air';
+  document.getElementById('airHum').textContent = Math.round(weather.humidity) + '% RH';
+  document.getElementById('rainMm').textContent = weather.rainMm + ' mm rain';
+  document.getElementById('rainBadge').textContent = 'Rain chance ' + weather.rainChance + '%';
 }
 
-function renderWeather() {
-  document.getElementById('airTemp').textContent = Math.round(weather.temp) + '°C';
-  document.getElementById('airHum').textContent = Math.round(weather.humidity) + '%';
-  document.getElementById('rainMm').textContent = weather.rainMm + ' mm';
-  document.getElementById('rainBadge').textContent = 'Rain chance ' + weather.rainChance + '%';
-  document.getElementById('dayLabel').textContent = 'Day ' + day;
-  document.getElementById('growthStage').textContent = currentStage(day).name;
+function renderSummary() {
+  let m = 0, pest = 0, plant = 0;
+  plots.forEach((p) => { m += p.moisture; pest += p.pest; plant += p.plant; });
+  const n = plots.length;
+  document.getElementById('sumMoist').textContent = Math.round(m / n) + '%';
+  document.getElementById('sumPest').textContent = Math.round(pest / n);
+  document.getElementById('sumPlant').textContent = Math.round(plant / n) + '%';
 }
 
 function renderAverages() {
-  let m = 0,
-    plant = 0,
-    water = 0,
-    pest = 0;
+  let m = 0, plant = 0, water = 0, pest = 0;
   plots.forEach((p) => {
-    m += p.moisture;
-    plant += p.plant;
+    m += p.moisture; plant += p.plant;
     if (p.moisture < 42) water++;
     if (p.pest >= 30) pest++;
   });
-  document.getElementById('avgMoist').textContent = Math.round(m / plots.length) + '%';
-  document.getElementById('avgPlant').textContent = Math.round(plant / plots.length) + '/100';
-  document.getElementById('needWater').textContent = water;
-  document.getElementById('needPest').textContent = pest;
+  const el = (id, v) => { const n = document.getElementById(id); if (n) n.textContent = v; };
+  el('avgMoist', Math.round(m / plots.length) + '%');
+  el('avgPlant', Math.round(plant / plots.length) + '/100');
+  el('needWater', water);
+  el('needPest', pest);
 }
 
 function renderGrowthPath() {
+  const box = document.getElementById('growthPath');
+  if (!box) return;
   const cur = currentStage(day);
-  document.getElementById('growthPath').innerHTML = STAGES.map((s) => {
+  box.innerHTML = STAGES.map((s) => {
     const active = s.name === cur.name;
     const done = day > s.dayTo;
     return `<div class="path-item ${active ? 'active' : ''}">
       <div class="dot ${done ? 'done' : active ? 'now' : ''}"></div>
       <div>
-        <div style="font-weight:600;${active ? 'color:var(--amber)' : ''}">${s.name}
-          <span style="font-weight:400;color:var(--muted);font-size:0.7rem"> Day ${s.dayFrom}–${s.dayTo}</span>
+        <div style="font-weight:600">${s.name}
+          <span style="font-weight:400;color:var(--muted);font-size:0.75rem"> Day ${s.dayFrom}–${s.dayTo}</span>
         </div>
-        <div style="font-size:0.75rem;color:var(--muted)">${active ? s.tip + ' (now)' : s.tip}</div>
+        <div style="font-size:0.78rem;color:var(--muted)">${active ? s.tip + ' (now)' : s.tip}</div>
       </div>
     </div>`;
   }).join('');
@@ -289,74 +334,25 @@ function renderAdvice() {
   const dry = plots.filter((p) => p.moisture < 40).length;
   const pest = plots.filter((p) => p.pest >= 30).length;
   const lowN = plots.filter((p) => p.n < 40).length;
-  const lowQ = plots.filter((p) => soilQuality(p) < 45).length;
   const stage = currentStage(day);
-
-  if (dry > 0)
-    list.push({
-      icon: 'fa-droplet',
-      color: 'text-sky',
-      text: `${dry} plot(s) are dry. Use “Water all dry” or turn on auto water.`,
-    });
-  if (pest > 0)
-    list.push({
-      icon: 'fa-bug',
-      color: 'text-rose',
-      text: `${pest} plot(s) show pest risk. Use “Treat all pest”.`,
-    });
-  if (lowN > 3)
-    list.push({
-      icon: 'fa-flask',
-      color: 'text-amber',
-      text: 'Nitrogen is low on several plots. Use “Fertilize all low”.',
-    });
-  if (lowQ > 2)
-    list.push({
-      icon: 'fa-triangle-exclamation',
-      color: 'text-orange',
-      text: 'Soil quality is weak on some sectors. Fix moisture and nutrients there.',
-    });
-  if (weather.rainChance >= 55)
-    list.push({
-      icon: 'fa-cloud-rain',
-      color: 'text-sky',
-      text: `Rain chance is high (${weather.rainChance}%). You can skip some watering.`,
-    });
-  if (stage.name === 'Flowering')
-    list.push({
-      icon: 'fa-spa',
-      color: 'text-green',
-      text: 'Flowering stage: keep moisture steady. Avoid big water stress.',
-    });
-  if (stage.name === 'Mature')
-    list.push({
-      icon: 'fa-scissors',
-      color: 'text-green',
-      text: 'Almost ready to harvest. Drain extra water from wet plots.',
-    });
-  if (list.length === 0)
-    list.push({
-      icon: 'fa-check',
-      color: 'text-green',
-      text: 'Field looks balanced. Keep watching the map each day.',
-    });
-
-  document.getElementById('adviceList').innerHTML = list
-    .map(
-      (a) =>
-        `<li><i class="fa-solid ${a.icon} ${a.color}" style="margin-top:2px"></i><span>${a.text}</span></li>`
-    )
-    .join('');
+  if (dry > 0) list.push(`${dry} plot(s) are dry. Use “Water all dry” or turn on auto water.`);
+  if (pest > 0) list.push(`${pest} plot(s) show pest risk. Use “Treat all pest”.`);
+  if (lowN > 3) list.push('Nitrogen is low on several plots. Use “Fertilize all low”.');
+  if (weather.rainChance >= 55) list.push(`Rain chance is high (${weather.rainChance}%). You can skip some watering.`);
+  if (stage.name === 'Flowering') list.push('Flowering stage: keep moisture steady.');
+  if (stage.name === 'Mature') list.push('Almost ready to harvest. Drain extra water from wet plots.');
+  if (!list.length) list.push('Field looks balanced. Keep watching the map each day.');
+  const ul = document.getElementById('adviceList');
+  if (ul) ul.innerHTML = list.map((t) => `<li>${t}</li>`).join('');
 }
 
 function renderYield() {
   const withY = estimateYield(plots, day, true, baseYield);
-  document.getElementById('yieldBase').textContent = baseYield.toFixed(2) + ' t/ha';
-  document.getElementById('yieldNow').textContent = withY.toFixed(2) + ' t/ha';
-
-  if (!window.Chart) {
-    return;
-  }
+  const b = document.getElementById('yieldBase');
+  const n = document.getElementById('yieldNow');
+  if (b) b.textContent = baseYield.toFixed(2) + ' t/ha';
+  if (n) n.textContent = withY.toFixed(2) + ' t/ha';
+  if (!window.Chart || !document.getElementById('yieldChart')) return;
   if (!yieldChart) {
     const ctx = document.getElementById('yieldChart').getContext('2d');
     yieldChart = new Chart(ctx, {
@@ -367,16 +363,16 @@ function renderYield() {
           {
             label: 'With Krishi Bondhu',
             data: yieldHistory.withSys,
-            borderColor: '#4ade80',
-            backgroundColor: 'rgba(74,222,128,0.12)',
+            borderColor: '#1f6b3a',
+            backgroundColor: 'rgba(31,107,58,0.1)',
             fill: true,
             tension: 0.3,
             pointRadius: 3,
           },
           {
-            label: 'Without system (start)',
+            label: 'Without system',
             data: yieldHistory.without,
-            borderColor: '#fbbf24',
+            borderColor: '#b45309',
             borderDash: [5, 4],
             backgroundColor: 'transparent',
             tension: 0.3,
@@ -387,18 +383,14 @@ function renderYield() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#a7f3d0', font: { size: 11 } } } },
+        plugins: { legend: { labels: { color: '#6b7c6b', font: { size: 11 } } } },
         scales: {
-          x: {
-            ticks: { color: '#6b8f71', maxTicksLimit: 8 },
-            grid: { color: 'rgba(255,255,255,0.05)' },
-          },
+          x: { ticks: { color: '#8a9a8a', maxTicksLimit: 8 }, grid: { color: 'rgba(0,0,0,0.05)' } },
           y: {
-            min: 1.5,
-            max: 6.5,
-            title: { display: true, text: 't/ha', color: '#6b8f71' },
-            ticks: { color: '#6b8f71' },
-            grid: { color: 'rgba(255,255,255,0.05)' },
+            min: 1.5, max: 6.5,
+            title: { display: true, text: 't/ha', color: '#8a9a8a' },
+            ticks: { color: '#8a9a8a' },
+            grid: { color: 'rgba(0,0,0,0.05)' },
           },
         },
       },
@@ -415,13 +407,13 @@ function renderAll() {
   renderField();
   renderInspector();
   renderWeather();
+  renderSummary();
   renderAverages();
   renderGrowthPath();
   renderAdvice();
   renderYield();
 }
 
-// ---------- day tick ----------
 function tick() {
   day += 1;
   updateWeather(weather, day);
@@ -443,16 +435,30 @@ function tick() {
   toast('Day ' + day + ' · ' + currentStage(day).name);
 }
 
-// ---------- wire events ----------
+function showPage(name) {
+  page = name;
+  document.querySelectorAll('.page').forEach((el) => el.classList.remove('active'));
+  const el = document.getElementById('page-' + name);
+  if (el) el.classList.add('active');
+  document.querySelectorAll('.nav button').forEach((b) => {
+    b.classList.toggle('active', b.dataset.page === name);
+  });
+  if (name === 'advise') renderYield();
+}
+
 function bind() {
+  document.querySelectorAll('.nav button').forEach((b) => {
+    b.onclick = () => showPage(b.dataset.page);
+  });
+
   document.getElementById('btnPlay').onclick = () => {
     playing = !playing;
     const btn = document.getElementById('btnPlay');
     if (playing) {
-      btn.innerHTML = '<i class="fa-solid fa-pause"></i> Pause';
+      btn.textContent = 'Pause';
       timer = setInterval(tick, 2800);
     } else {
-      btn.innerHTML = '<i class="fa-solid fa-play"></i> Start day';
+      btn.textContent = 'Run clock';
       clearInterval(timer);
     }
   };
@@ -460,7 +466,7 @@ function bind() {
   document.getElementById('btnReset').onclick = () => {
     playing = false;
     clearInterval(timer);
-    document.getElementById('btnPlay').innerHTML = '<i class="fa-solid fa-play"></i> Start day';
+    document.getElementById('btnPlay').textContent = 'Run clock';
     day = 22;
     selected = null;
     plots = createField();
@@ -472,12 +478,9 @@ function bind() {
       withSys: [estimateYield(plots, day, true, baseYield)],
       without: [baseYield],
     };
-    if (yieldChart) {
-      yieldChart.destroy();
-      yieldChart = null;
-    }
+    if (yieldChart) { yieldChart.destroy(); yieldChart = null; }
     renderAll();
-    toast('Field reset to Day 22 (tillering)');
+    toast('Field reset to Day 22');
   };
 
   document.getElementById('autoIrrigate').onchange = (e) => {
@@ -509,27 +512,27 @@ function bind() {
     if (!selected) return toast('Select a plot first');
     waterOne(getPlot(selected.r, selected.c));
     renderAll();
-    toast('Watered plot ' + getPlot(selected.r, selected.c).id);
+    toast('Irrigated ' + getPlot(selected.r, selected.c).id);
   };
   document.getElementById('actFert').onclick = () => {
     if (!selected) return toast('Select a plot first');
     fertilizeOne(getPlot(selected.r, selected.c));
     renderAll();
-    toast('Fertilizer on ' + getPlot(selected.r, selected.c).id);
+    toast('Urea on ' + getPlot(selected.r, selected.c).id);
   };
   document.getElementById('actPest').onclick = () => {
     if (!selected) return toast('Select a plot first');
     treatOne(getPlot(selected.r, selected.c));
     renderAll();
-    toast('Pest treatment on ' + getPlot(selected.r, selected.c).id);
+    toast('Treated ' + getPlot(selected.r, selected.c).id);
+  };
+  document.getElementById('clearSel').onclick = () => {
+    selected = null;
+    renderAll();
   };
 }
 
-// ---------- start ----------
 try {
-  if (!window.Chart) {
-    console.warn('Chart.js not loaded yet — yield graph may be empty');
-  }
   document.getElementById('app').innerHTML = shell();
   updateWeather(weather, day);
   bind();
@@ -537,8 +540,7 @@ try {
 } catch (err) {
   console.error(err);
   document.getElementById('app').innerHTML =
-    '<div style="padding:2rem;color:#fecaca;font-family:system-ui">' +
-    '<h2>App error</h2><pre style="white-space:pre-wrap">' +
+    '<div style="padding:2rem;color:#9f1239;font-family:system-ui"><h2>App error</h2><pre style="white-space:pre-wrap">' +
     String(err && err.stack ? err.stack : err) +
-    '</pre><p style="color:#a7f3d0">Open F12 → Console and send this text.</p></div>';
+    '</pre></div>';
 }
