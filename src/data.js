@@ -38,7 +38,6 @@ export const YIELD = {
   baseWithoutFactor: 0.78,
 };
 
-/** Chattogram coastal plain — warmer & more humid */
 export const CLIMATE = {
   tempMin: 25,
   tempMax: 34,
