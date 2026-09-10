@@ -1,34 +1,47 @@
 # Architecture — Krishi Bondhu
 
-## What this is
-A **browser simulation** of a 1-acre Aman rice field in Paba, Rajshahi.  
-It shows how cheap sensors + simple rules can guide water, fertilizer, and pest action by sector.
+## Overview
 
-## Layers
+Client-only static web app (HTML + ES modules + Chart.js CDN).  
+No backend required for the Buildathon demo.
 
 ```
-[ Sensors (simulated) ]
-        ↓
-[ Field model — 48 plots ]  ← soil type, moisture, N·P·K, plant health, pest
-        ↓
-[ Rules engine ]            ← yield estimate, growth stage, advice, bulk actions
-        ↓
-[ UI ]                      ← map, inspector, yield chart, one-click fixes
+Browser
+  index.html
+    └── src/main.js          UI, charts, action log, auto toggles
+          ├── store.js       Plots, yield, bulk water/fertilizer
+          ├── weather.js     Temp, RH, rain chance
+          ├── data.js        Stages, thresholds, field metadata
+          └── style.css
 ```
 
-## Files
-| File | Role |
-|------|------|
-| `src/store.js` | Field grid, soil/plant math, yield model, bulk actions |
-| `src/weather.js` | Air temp, humidity, rain chance (Aman season) |
-| `src/main.js` | UI, day clock, Chart.js yield graph |
-| `src/style.css` | Layout and colors |
-| `index.html` | Entry page |
+Live: https://krishi-bondhu-phi.vercel.app
 
-## Why this design
-- **Offline-friendly concept**: logic runs in the browser; no server required after load.
-- **Sector-based**: farmers act only on dry / low / pest plots — not the whole field every time.
-- **Feasible hardware path**: same ideas map to ESP32 + soil moisture + cheap NPK probes in a real pilot.
+## Data flow
 
-## Not a black-box ML model
-Yield and advice use clear, explainable formulas so judges can follow the logic in a short demo.
+1. **Init** — `createField()` builds 48 plots (north drier, south wetter, center higher pest risk).  
+2. **Sensors (sim)** — moisture, N·P·K, plant health, pest score, weather.  
+3. **Advise** — rules from `data.js` (`RULES`) → water / fertilizer / pest alerts.  
+4. **Act** — manual (plot or bulk) or optional auto on day tick → **action log**.  
+5. **Charts** — rolling 12-hour probe series; yield with system vs baseline; stress counts.
+
+## Modules
+
+| File | Responsibility |
+|------|----------------|
+| `data.js` | Field info, growth stages, thresholds, climate bounds |
+| `weather.js` | Day-to-day temp / humidity / rain |
+| `store.js` | Plot state, soil quality, yield estimate, bulk actions, sensor log buffer |
+| `main.js` | Shell UI, pages (Field, Sensors, Charts, Advise, Guide), charts, log |
+
+## Design choices
+
+- **Rules over heavy ML** for a clear, demable prototype and offline logic  
+- **Pest = detect only** — no treat pipeline in software  
+- **Advise-first** — auto water/fertilizer are optional assists  
+- **Static deploy** — Vercel / any static host  
+
+## Future (hardware)
+
+ESP32 reads moisture (and optional NPK) → HTTP or BLE → same UI fields.  
+Architecture of the dashboard does not need to change.
