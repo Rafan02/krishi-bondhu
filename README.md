@@ -1,52 +1,91 @@
 # Krishi Bondhu
 
-**Robofest Buildathon — Track C Agritech**
+**Smart field helper for Aman rice — Track C (Agritech)**
 
-Smart helper for a **1-acre Aman rice field** (Paba, Rajshahi).
-Sensors + simple rules show which sectors need water, fertilizer, or pest care — and compare expected yield **with** the system vs **without**.
+**Live demo:** https://krishi-bondhu-phi.vercel.app
 
-## One-line idea
-Farmers stop watering the whole field on a fixed schedule. They act only where the map is yellow or red, and can fix all problem plots in **one click**.
+---
 
-## Open locally
-Double-click `index.html` or open the folder with a simple static server.
+## Problem
 
-If the browser blocks ES modules from file://, deploy to Vercel (below) or use any static server.
+Many small rice farmers water and fertilize the **whole field on a fixed schedule**.  
+That wastes water and fertilizer, and still misses dry or pest-stressed zones.
 
-## Deploy to Vercel (no build step)
-1. Push this folder to a public GitHub repo (name e.g. `krishi-bondhu`).
-2. Go to vercel.com → Add New Project → import the repo.
-3. Framework: Other. Build command: empty. Output directory: empty (or `.`).
-4. Deploy → paste the live URL into this README.
+## Solution
 
-You can also drag-and-drop the folder on Vercel.
+**Krishi Bondhu** maps a **1-acre Aman field in Hathazari, Chattogram** into **48 plots**.  
+Sensors and simple rules:
 
-## Project layout
+1. **Show** which zones are healthy, dry, or at pest risk  
+2. **Advise** what to do (water, urea / TSP / MOP) — not a fixed calendar  
+3. **Optional auto** for water and fertilizer; **pest is detection only**  
+4. **Log** what was applied and roughly how much  
+5. **Compare** expected yield with the system vs without  
+
+This repo is a **browser concept simulation** (no real hardware required to demo).  
+A low-cost sensor path is described in `docs/FEASIBILITY.md`.
+
+---
+
+## Quick start (local)
+
+Open `index.html` via any static server (modules need HTTP, not `file://`):
+
+```bash
+npx serve .
+# or: python -m http.server 5500
 ```
-index.html          entry
+
+Then open the printed URL.
+
+## Deploy
+
+Static site — works on **Vercel** (Framework: Other, output = repo root).  
+Public site: https://krishi-bondhu-phi.vercel.app
+
+---
+
+## Project structure
+
+```
+index.html
 src/
-  main.js           UI, day clock, chart, buttons
-  store.js          field, yield math, bulk actions
-  weather.js        rain / humidity / season
-  style.css         layout
+  main.js      UI + charts + action log
+  store.js     Field state, yield, bulk actions
+  weather.js   Simple Chattogram-style weather
+  data.js      Stages, thresholds, field constants
+  style.css
 docs/
-  ARCHITECTURE.md   system design for judges
-  FEASIBILITY.md    cost, sustainability, scale
-  AI_USAGE.md       required AI disclosure
+  ARCHITECTURE.md
+  FEASIBILITY.md
+  AI_USAGE.md
 ```
 
-## Features (Track C aligned)
-- Field map (48 plots) with soil type, quality, moisture, N-P-K, plant health, pest
-- Rain chance + growth path to harvest
-- Bulk actions: Water all dry / Fertilize all low / Treat all pest
-- Auto water toggle
-- Yield graph: with system vs without
-- Simple English UI for a short live demo
+---
 
-## Docs for judges
-- docs/ARCHITECTURE.md
-- docs/FEASIBILITY.md
-- docs/AI_USAGE.md
+## Features (demo)
 
-## Note
-Concept simulation for the Buildathon — clear idea and UX, not a claim of trained ML or finished hardware.
+| Area | What you can show |
+|------|-------------------|
+| Field map | 48 plots, rice texture, click inspector |
+| Auto / manual | Auto water, auto fertilizer + one-plot / bulk buttons |
+| Pest | Detection + alerts only (no treat step) |
+| Advise | Actions + which fertilizer/supplement |
+| Sensors | Averages, N·P·K, weather, risk counts |
+| Charts | Last 12 field-hours, yield meter, stress bars |
+| Log | Water / fertilizer applications with approximate amounts |
+
+---
+
+## Documentation
+
+- [Architecture](docs/ARCHITECTURE.md)  
+- [Feasibility & cost](docs/FEASIBILITY.md)  
+- [AI usage note](docs/AI_USAGE.md)  
+
+---
+
+## Team note
+
+Robofest Buildathon — Track C Agritech.  
+Concept simulation for presentation; hardware path is optional follow-on.
