@@ -1,18 +1,17 @@
 /**
- * Realism constants for 1-acre Aman rice — Paba, Rajshahi.
- * Simple numbers a judge can explain in 30 seconds.
+ * Realism constants for 1-acre Aman rice — Hathazari, Chattogram.
  */
 
 export const FIELD = {
-  name: 'Demo field · Paba, Rajshahi',
+  name: 'Demo field · Hathazari, Chattogram',
   crop: 'Aman rice',
   acres: 1.0,
   plots: 48,
   cols: 8,
   rows: 6,
+  region: 'Chattogram',
 };
 
-/** Growth stages (days after transplant / start of sim) */
 export const STAGES = [
   { name: 'Seedling', dayFrom: 0, dayTo: 14, tip: 'Keep soil moist. Light water if dry.' },
   { name: 'Tillering', dayFrom: 15, dayTo: 40, tip: 'Main growth. Watch nitrogen and moisture.' },
@@ -21,7 +20,6 @@ export const STAGES = [
   { name: 'Mature', dayFrom: 91, dayTo: 110, tip: 'Drain water before harvest.' },
 ];
 
-/** Advice thresholds */
 export const RULES = {
   dryMoisture: 40,
   autoWaterBelow: 42,
@@ -34,16 +32,15 @@ export const RULES = {
   highRainChance: 55,
 };
 
-/** Yield model bounds (t/ha) for this region */
 export const YIELD = {
   min: 1.5,
   max: 6.2,
   baseWithoutFactor: 0.78,
 };
 
-/** Rajshahi-ish Aman weather ranges */
+/** Chattogram coastal plain — warmer & more humid */
 export const CLIMATE = {
-  tempMin: 24,
+  tempMin: 25,
   tempMax: 34,
-  humidityBase: 65,
+  humidityBase: 72,
 };
