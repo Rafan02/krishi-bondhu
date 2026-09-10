@@ -653,7 +653,7 @@ function renderYield() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#6b7c6b', font: { size: 11 } } },
+        plugins: { legend: { labels: { color: '#6b7c6b', font: { size: 11 } } } },
         scales: {
           x: { ticks: { color: '#8a9a8a', maxTicksLimit: 8 }, grid: { color: 'rgba(0,0,0,0.05)' } },
           y: { min: 1.5, max: 6.5, title: { display: true, text: 't/ha', color: '#8a9a8a' }, ticks: { color: '#8a9a8a' }, grid: { color: 'rgba(0,0,0,0.05)' } },
@@ -796,7 +796,6 @@ function bind() {
     if (stressChart) { stressChart.destroy(); stressChart = null; }
     seedSensorLog();
     actionLog = [];
-    logWarnings();
     renderAll();
     toast('Field reset to Day 22');
   };
