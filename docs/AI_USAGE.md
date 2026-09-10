@@ -1,3 +1,9 @@
+
+---
+
+### `docs/AI_USAGE.md`
+
+```markdown
 # AI usage log — Krishi Bondhu
 
 Robofest rules ask teams to document AI help. This file is that record.
