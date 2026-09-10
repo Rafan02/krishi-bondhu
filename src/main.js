@@ -354,6 +354,9 @@ function renderYield() {
   document.getElementById('yieldBase').textContent = baseYield.toFixed(2) + ' t/ha';
   document.getElementById('yieldNow').textContent = withY.toFixed(2) + ' t/ha';
 
+  if (!window.Chart) {
+    return;
+  }
   if (!yieldChart) {
     const ctx = document.getElementById('yieldChart').getContext('2d');
     yieldChart = new Chart(ctx, {
@@ -384,7 +387,7 @@ function renderYield() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#a7f3d0', font: { size: 11 } } },
+        plugins: { legend: { labels: { color: '#a7f3d0', font: { size: 11 } } } },
         scales: {
           x: {
             ticks: { color: '#6b8f71', maxTicksLimit: 8 },
@@ -523,7 +526,19 @@ function bind() {
 }
 
 // ---------- start ----------
-document.getElementById('app').innerHTML = shell();
-updateWeather(weather, day);
-bind();
-renderAll();
+try {
+  if (!window.Chart) {
+    console.warn('Chart.js not loaded yet — yield graph may be empty');
+  }
+  document.getElementById('app').innerHTML = shell();
+  updateWeather(weather, day);
+  bind();
+  renderAll();
+} catch (err) {
+  console.error(err);
+  document.getElementById('app').innerHTML =
+    '<div style="padding:2rem;color:#fecaca;font-family:system-ui">' +
+    '<h2>App error</h2><pre style="white-space:pre-wrap">' +
+    String(err && err.stack ? err.stack : err) +
+    '</pre><p style="color:#a7f3d0">Open F12 → Console and send this text.</p></div>';
+}
