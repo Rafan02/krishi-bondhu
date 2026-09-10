@@ -58,6 +58,27 @@ function logAction(text) {
   renderActionLog();
 }
 
+/** Push current field warnings into the action log (same signals as Advise). */
+function logWarnings() {
+  const dry = plots.filter((p) => p.moisture < RULES.dryMoisture).length;
+  const wet = plots.filter((p) => p.moisture > RULES.wetMoisture).length;
+  const pest = plots.filter((p) => p.pest >= RULES.pestAlert).length;
+  const lowN = plots.filter((p) => p.n < RULES.lowNitrogen).length;
+  const weak = plots.filter((p) => p.plant < 50).length;
+  const stage = currentStage(day);
+
+  if (dry > 0) logAction(`Warning · ${dry} plot(s) dry — water recommended`);
+  if (wet > 0) logAction(`Warning · ${wet} plot(s) too wet — ease irrigation`);
+  if (lowN > 3) logAction(`Warning · ${lowN} plot(s) low nitrogen — fertilize recommended`);
+  if (pest > 0) logAction(`Warning · ${pest} plot(s) pest risk — treat recommended`);
+  if (weak > 0) logAction(`Warning · ${weak} plot(s) weak plant health — check moisture & nutrients`);
+  if (stage.name === 'Flowering') logAction('Warning · Flowering stage — keep moisture steady');
+  if (stage.name === 'Mature') logAction('Warning · Mature stage — drain wet plots before harvest');
+  if (weather.rainChance >= RULES.highRainChance) {
+    logAction(`Warning · High rain chance (${weather.rainChance}%) — skip some watering`);
+  }
+}
+
 function renderActionLog() {
   const box = document.getElementById('actionLog');
   if (!box) return;
@@ -632,7 +653,7 @@ function renderYield() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#6b7c6b', font: { size: 11 } } } },
+        plugins: { legend: { labels: { color: '#6b7c6b', font: { size: 11 } } },
         scales: {
           x: { ticks: { color: '#8a9a8a', maxTicksLimit: 8 }, grid: { color: 'rgba(0,0,0,0.05)' } },
           y: { min: 1.5, max: 6.5, title: { display: true, text: 't/ha', color: '#8a9a8a' }, ticks: { color: '#8a9a8a' }, grid: { color: 'rgba(0,0,0,0.05)' } },
@@ -716,6 +737,7 @@ function tick() {
       toast('Auto fertilizer: ' + n + ' plot(s)');
     }
   }
+  logWarnings();
   pushSensorSample(sensorLog, weather, avgMoisture(plots), hourLabel(simHour));
   const ys = estimateYield(plots, day, true, baseYield);
   yieldHistory.labels.push('D' + day);
@@ -774,6 +796,7 @@ function bind() {
     if (stressChart) { stressChart.destroy(); stressChart = null; }
     seedSensorLog();
     actionLog = [];
+    logWarnings();
     renderAll();
     toast('Field reset to Day 22');
   };
@@ -870,6 +893,7 @@ try {
   updateWeather(weather, day);
   seedSensorLog();
   bind();
+  logWarnings();
   renderAll();
 } catch (err) {
   console.error(err);
