@@ -1,20 +1,14 @@
+import { STAGES, RULES, YIELD } from './data.js';
+export { STAGES };
+
 /**
- * Farm state — one 1-acre Aman rice field (48 plots).
- * Realism: north ridge dries faster, south near canal stays wetter,
- * center can develop pest / blast risk.
+ * Farm state — 1-acre Aman rice field (48 plots).
+ * North dries faster, south near canal wetter, center pest risk.
  */
 
 export const COLS = 8;
 export const ROWS = 6;
 export const COL_LABELS = 'ABCDEFGH';
-
-export const STAGES = [
-  { name: 'Seedling', dayFrom: 0, dayTo: 14, tip: 'Keep soil moist. Light water if dry.' },
-  { name: 'Tillering', dayFrom: 15, dayTo: 40, tip: 'Main growth. Watch nitrogen and moisture.' },
-  { name: 'Flowering', dayFrom: 41, dayTo: 65, tip: 'Avoid water stress. Check for blast.' },
-  { name: 'Grain fill', dayFrom: 66, dayTo: 90, tip: 'Steady moisture. Reduce heavy fertilizer.' },
-  { name: 'Mature', dayFrom: 91, dayTo: 110, tip: 'Drain water before harvest.' },
-];
 
 function rnd(a, b) {
   return a + Math.random() * (b - a);
@@ -108,13 +102,8 @@ export function currentStage(day) {
   return STAGES.find((s) => day >= s.dayFrom && day <= s.dayTo) || STAGES[STAGES.length - 1];
 }
 
-/** Yield in t/ha — withSystem uses live care; without is the locked start baseline path */
 export function estimateYield(plots, day, withSystem, baseYield) {
-  let m = 0,
-    nut = 0,
-    pest = 0,
-    plant = 0,
-    sq = 0;
+  let m = 0, nut = 0, pest = 0, plant = 0, sq = 0;
   plots.forEach((p) => {
     m += p.moisture;
     nut += (p.n + p.p + p.k) / 3;
@@ -123,11 +112,7 @@ export function estimateYield(plots, day, withSystem, baseYield) {
     sq += soilQuality(p);
   });
   const n = plots.length;
-  m /= n;
-  nut /= n;
-  pest /= n;
-  plant /= n;
-  sq /= n;
+  m /= n; nut /= n; pest /= n; plant /= n; sq /= n;
 
   let y = 2.2;
   if (m >= 50 && m <= 75) y += 1.1;
@@ -180,7 +165,6 @@ export function advanceDay(plots, weather) {
   });
 }
 
-/** Bulk actions — fix all problem plots in one click */
 export function waterAllDry(plots) {
   let count = 0;
   plots.forEach((p) => {
@@ -236,4 +220,27 @@ export function fertilizeOne(p) {
 export function treatOne(p) {
   p.pest = clamp(p.pest - rnd(18, 28), 0, 80);
   p.plant = clamp(p.plant + 4, 15, 98);
+}
+
+export function createSensorLog() {
+  return { labels: [], moisture: [], temp: [], rh: [] };
+}
+
+export function pushSensorSample(log, weather, avgMoisture, hourLabel) {
+  log.labels.push(hourLabel);
+  log.moisture.push(Math.round(avgMoisture));
+  log.temp.push(Math.round(weather.temp * 10) / 10);
+  log.rh.push(Math.round(weather.humidity));
+  while (log.labels.length > 12) {
+    log.labels.shift();
+    log.moisture.shift();
+    log.temp.shift();
+    log.rh.shift();
+  }
+  return log;
+}
+
+export function avgMoisture(plots) {
+  if (!plots.length) return 0;
+  return plots.reduce((s, p) => s + p.moisture, 0) / plots.length;
 }
