@@ -204,9 +204,9 @@ function shell() {
           <div class="bulk-row">
             <button type="button" class="btn btn-sky" id="bulkWater">Water all dry</button>
             <button type="button" class="btn btn-amber" id="bulkFert">Fertilize all low</button>
+            <button type="button" class="btn btn-rose" id="bulkPest">Treat all pest</button>
           </div>
           <p class="hint">Manual one-click for the whole field. Or turn on Auto water / Auto fertilizer above.</p>
-          <p class="hint" style="margin-top:0.35rem">Pest is <strong>detection only</strong> — red plots and alerts; no spray/treat step in this demo.</p>
         </div>
       </section>
 
@@ -238,6 +238,7 @@ function shell() {
             <div class="action-row">
               <button type="button" class="btn btn-primary" id="actWater">Irrigate</button>
               <button type="button" class="btn" id="actFert">Urea</button>
+              <button type="button" class="btn btn-rose" id="actPest">Treat pest</button>
             </div>
             <p class="hint" id="pestHint" style="margin-top:0.5rem"></p>
             <button type="button" class="linkish" id="clearSel">Clear selection</button>
@@ -291,7 +292,7 @@ function shell() {
           <div class="stat-mini"><div class="lab">Low nitrogen</div><div class="val" id="cntLowN">—</div></div>
           <div class="stat-mini"><div class="lab">Pest alerts</div><div class="val" id="cntPest">—</div></div>
         </div>
-        <p class="hint" style="margin-top:0.65rem">Pest count is detection only — no treat step in this demo.</p>
+        <p class="hint" style="margin-top:0.65rem">Treat flagged plots from the Field map or with “Treat all pest”.</p>
       </div>
     </div>
 
@@ -360,8 +361,8 @@ function shell() {
     <div class="card">
       <ol style="margin:0;padding-left:1.15rem;color:var(--muted);line-height:1.6;font-size:0.92rem">
         <li><strong style="color:var(--ink)">Sensors</strong> read soil type, quality, moisture, N·P·K, plant health, air humidity, and season / rain chance.</li>
-        <li><strong style="color:var(--ink)">System</strong> predicts yield and builds a water / fertilizer plan from live data and flags pest risk — not a fixed timetable.</li>
-        <li><strong style="color:var(--ink)">Map</strong> shows each sector. Yellow / red need attention. Auto or one-click water and fertilizer. Pest is detection only. Graphs show 12-hour probes and yield with vs without the system.</li>
+        <li><strong style="color:var(--ink)">System</strong> predicts yield and builds a water / fertilizer / pest plan from live data — not a fixed timetable.</li>
+        <li><strong style="color:var(--ink)">Map</strong> shows each sector. Yellow / red need attention. Auto or one-click water, fertilizer, and pest treatment. Graphs show 12-hour probes and yield with vs without the system.</li>
       </ol>
     </div>
   </div>
@@ -419,7 +420,7 @@ function renderInspector() {
   const ph = document.getElementById('pestHint');
   if (ph) {
     ph.textContent = p.pest >= 30
-      ? 'Pest detected on this plot — alert only (no treat step in this demo).'
+      ? 'Pest detected on this plot — use Treat pest to reduce load.'
       : 'No high pest signal on this plot.';
   }
 }
@@ -562,7 +563,7 @@ function renderAdvice() {
   }
 
   if (pest > 0) {
-    extra.push(`${pest} plot(s) flagged for pest risk (detection only). Check red zones on the Field map — no spray step in this demo.`);
+    extra.push(`${pest} plot(s) flagged for pest risk. Check red zones on the Field map and use Treat pest or “Treat all pest”.`);
   } else {
     extra.push('No high pest signal field-wide right now. Keep scanning the map after humid days.');
   }
@@ -825,6 +826,14 @@ function bind() {
       toast(`Fertilized ${n} low plot(s)`);
     } else toast('Nutrients look fine');
   };
+  document.getElementById('bulkPest').onclick = () => {
+    const n = treatAllPest(plots);
+    renderAll();
+    if (n) {
+      logAction(`Pest treatment · ${n} plot(s) · load reduced (manual bulk)`);
+      toast(`Treated ${n} pest plot(s)`);
+    } else toast('No high-pest plots right now');
+  };
   document.getElementById('actWater').onclick = () => {
     if (!selected) return toast('Select a plot first');
     const id = getPlot(selected.r, selected.c).id;
@@ -840,6 +849,15 @@ function bind() {
     renderAll();
     logAction(`Urea (N) + light P/K · plot ${id} · ~12–18 N units (manual)`);
     toast('Urea on ' + id);
+  };
+  document.getElementById('actPest').onclick = () => {
+    if (!selected) return toast('Select a plot first');
+    const p = getPlot(selected.r, selected.c);
+    const id = p.id;
+    treatOne(p);
+    renderAll();
+    logAction(`Pest treatment · plot ${id} · load reduced (manual)`);
+    toast('Treated pest on ' + id);
   };
   document.getElementById('clearSel').onclick = () => {
     selected = null;
