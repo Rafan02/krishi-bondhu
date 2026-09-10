@@ -1,5 +1,3 @@
-import './style.css';
-const Chart = window.Chart;
 import {
   createField,
   soilQuality,
@@ -21,6 +19,7 @@ import {
 } from './store.js';
 import { createWeather, updateWeather } from './weather.js';
 
+const Chart = window.Chart;
 // ---------- state ----------
 let day = 22;
 let playing = false;
@@ -385,7 +384,7 @@ function renderYield() {
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { labels: { color: '#a7f3d0', font: { size: 11 } } } },
+        plugins: { legend: { labels: { color: '#a7f3d0', font: { size: 11 } } },
         scales: {
           x: {
             ticks: { color: '#6b8f71', maxTicksLimit: 8 },
