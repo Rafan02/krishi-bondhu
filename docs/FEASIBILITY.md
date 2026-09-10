@@ -1,39 +1,64 @@
-# Feasibility & scalability — Krishi Bondhu
+# Feasibility — Krishi Bondhu
 
-## Problem
-Small rice farmers in Bangladesh often water and fertilize the **whole field** on a fixed schedule.  
-That wastes water, money, and still misses dry or pest-hit pockets.
+## Problem (one line)
 
-## Solution (this prototype)
-Show the field as **sectors**. Sensors + simple rules say:
-- which plots need water, fertilizer, or pest treatment
-- expected yield **with** care vs **without**
-- growth stage tips until harvest
+Fixed-schedule irrigation and fertilizer on small Aman fields waste water and inputs and miss stressed zones.
 
-## Feasibility (real world)
-| Item | Approx. cost (pilot) | Notes |
-|------|----------------------|--------|
-| ESP32 board | low | Local shops / online |
-| Soil moisture sensors | low | One per sector or zone |
-| Basic NPK / EC probe | medium | Shared or fewer units |
-| Solar + battery | medium | Off-grid capable |
-| Phone app / web view | low | Same UI idea as this demo |
+## Target user
 
-Farmer flow: open app → see red/yellow plots → water or treat those only (or use auto rules).
+Smallholder rice farmers in **Chattogram** (demo field: **Hathazari**), ~1 acre, phone access, limited budget.
+
+## What this demo is
+
+A **working software prototype** in the browser:
+
+- Sector map, sensor-style readings, advice, optional auto water/fertilizer  
+- Pest **detection only**  
+- Action log and yield comparison  
+
+It does **not** claim a finished commercial product or a trained neural network in production.
+
+## Hardware path (realistic next step)
+
+| Item | Role | Rough cost (BDT, indicative) |
+|------|------|------------------------------|
+| Soil moisture sensors (3–6) | Zone moisture | 800–2,500 |
+| Optional NPK / EC probe | Nutrients | 3,000–8,000 |
+| ESP32 + power | Read sensors, send or store | 500–1,200 |
+| Solar + battery (small) | Off-grid | 1,500–4,000 |
+| Farmer phone + this web app | UI | 0 extra if phone exists |
+| **Starter kit (estimate)** | One field pilot | **~7,000–15,000 BDT** |
+
+No tractor robot required for the first version.
 
 ## Sustainability
-- Less over-irrigation → saves water and fuel/pump time  
-- Targeted fertilizer → less runoff  
-- Early pest alert → lower crop loss  
+
+- Water only dry zones (manual bulk or optional auto)  
+- Fertilizer advice by nutrient (urea / TSP–DAP / MOP), not whole-field broadcast  
+- Pest alerts without fake “spray everything” mechanics  
+- Action log supports accountability and learning  
 
 ## Scalability
-1. **One acre** (this demo)  
-2. **Several acres** — same sector map, more sensor nodes  
-3. **Cooperative** — shared dashboard for a village group  
 
-No need for heavy cloud AI on day one. Rules can run on phone or a small local device.
+| Stage | Scope |
+|-------|--------|
+| Now | 1 acre, 48 plots, browser sim |
+| Next | Same UI + real ESP32 moisture on 1 field |
+| Later | Multiple fields / co-op dashboard |
 
-## What this Buildathon build proves
-- Clear UX for non-technical farmers (simple words, color map)  
-- Measurable benefit idea (yield with vs without)  
-- Path from simulation → cheap IoT pilot without claiming fake accuracy  
+## Offline-minded design
+
+Static web app; probe log is simulated “on-device” series.  
+Real deployment can buffer readings on ESP32 when the tower/network is down.
+
+## Risks and honesty
+
+| Risk | Mitigation |
+|------|------------|
+| Farmers distrust full auto fertilizer | Default = advise; auto is optional |
+| Sensor drift / cost | Start with moisture only |
+| Pest false alarms | Detection + human check, no auto spray in this design |
+
+## Success metric (pilot idea)
+
+Reduce unnecessary irrigation events and fertilizer bags per acre while keeping or improving yield — measured over one Aman season on a pilot plot.
